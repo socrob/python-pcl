@@ -11,6 +11,6 @@ cdef class PointCloud:
     cdef Py_ssize_t _shape[2]
     cdef Py_ssize_t _view_count
 
-    cdef inline cpp.PointCloud[cpp.PointXYZ] *thisptr(self) nogil:
+    cdef inline cpp.PointCloud[cpp.PointXYZRGB] *thisptr(self) nogil:
         # Shortcut to get raw pointer to underlying PointCloud<PointXYZ>.
         return self.thisptr_shared.get()
