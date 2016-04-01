@@ -143,7 +143,7 @@ cdef class SegmentationNormal:
 cdef Py_ssize_t _strides[2]
 cdef PointCloud _pc_tmp = PointCloud(np.array([[1, 2, 3],
                                                [4, 5, 6]], dtype=np.float32))
-cdef cpp.PointCloud[cpp.PointXYZ] *p = _pc_tmp.thisptr()
+cdef cpp.PointCloud[cpp.PointXYZRGB] *p = _pc_tmp.thisptr()
 _strides[0] = (  <Py_ssize_t><void *>cpp.getptr(p, 1)
                - <Py_ssize_t><void *>cpp.getptr(p, 0))
 _strides[1] = (  <Py_ssize_t><void *>&(cpp.getptr(p, 0).y)
@@ -165,7 +165,7 @@ cdef class PointCloud:
 
         self._view_count = 0
 
-        sp_assign(self.thisptr_shared, new cpp.PointCloud[cpp.PointXYZ]())
+        sp_assign(self.thisptr_shared, new cpp.PointCloud[cpp.PointXYZRGB]())
 
         if init is None:
             return
@@ -255,10 +255,11 @@ cdef class PointCloud:
         self.thisptr().width = npts
         self.thisptr().height = 1
 
-        cdef cpp.PointXYZ *p
+        cdef cpp.PointXYZRGB *p
         for i in range(npts):
             p = cpp.getptr(self.thisptr(), i)
             p.x, p.y, p.z = arr[i, 0], arr[i, 1], arr[i, 2]
+            p.rgb = 0   # TODO: assign a sensible value (black by default?)
 
     @cython.boundscheck(False)
     def to_array(self):
@@ -268,7 +269,7 @@ cdef class PointCloud:
         cdef float x,y,z
         cdef cnp.npy_intp n = self.thisptr().size()
         cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] result
-        cdef cpp.PointXYZ *p
+        cdef cpp.PointXYZRGB *p
 
         result = np.empty((n, 3), dtype=np.float32)
 
@@ -277,6 +278,7 @@ cdef class PointCloud:
             result[i, 0] = p.x
             result[i, 1] = p.y
             result[i, 2] = p.z
+            p.rgb   # TODO: return RBG value ? Or just ignore it...
         return result
 
     def from_list(self, _list):
@@ -284,7 +286,7 @@ cdef class PointCloud:
         Fill this pointcloud from a list of 3-tuples
         """
         cdef Py_ssize_t npts = len(_list)
-        cdef cpp.PointXYZ *p
+        cdef cpp.PointXYZRGB *p
 
         self.resize(npts)
         self.thisptr().width = npts
@@ -292,6 +294,7 @@ cdef class PointCloud:
         for i, l in enumerate(_list):
             p = cpp.getptr(self.thisptr(), i)
             p.x, p.y, p.z = l
+            p.rgb = 0   # TODO: add RGB value 
 
     def to_list(self):
         """
@@ -309,12 +312,14 @@ cdef class PointCloud:
         """
         Return a point (3-tuple) at the given row/column
         """
-        cdef cpp.PointXYZ *p = cpp.getptr_at(self.thisptr(), row, col)
+        cdef cpp.PointXYZRGB *p = cpp.getptr_at(self.thisptr(), row, col)
         return p.x, p.y, p.z
+        # TODO: Return RGB value ?
 
     def __getitem__(self, cnp.npy_intp idx):
-        cdef cpp.PointXYZ *p = cpp.getptr_at(self.thisptr(), idx)
+        cdef cpp.PointXYZRGB *p = cpp.getptr_at(self.thisptr(), idx)
         return p.x, p.y, p.z
+        # Return RGB value ?
 
     def from_file(self, char *f):
         """
@@ -666,11 +671,12 @@ cdef class KdTreeFLANN:
             sqdist[i] = k_sqr_distances[i]
             ind[i] = k_indices[i]
 
-cdef cpp.PointXYZ to_point_t(point):
-    cdef cpp.PointXYZ p
+cdef cpp.PointXYZRGB to_point_t(point):
+    cdef cpp.PointXYZRGB p
     p.x = point[0]
     p.y = point[1]
     p.z = point[2]
+    p.rgb = 0   # TODO: add RGB data
     return p
 
 cdef class OctreePointCloud:
