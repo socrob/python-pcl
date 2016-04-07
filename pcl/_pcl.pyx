@@ -60,7 +60,7 @@ cnp.import_array()
 
 # RGB helper functions
 def rgb_to_float(r, g, b):
-    rgb = r << 16 | g << 8 | b
+    rgb = int(r) << 16 | int(g) << 8 | int(b)
     # p.rgb = *reinterpret_cast<float*>(&rgb);
     rgb_bytes = struct.pack('I', rgb)
     p_rgb = struct.unpack('f', rgb_bytes)[0]
@@ -159,8 +159,8 @@ cdef class SegmentationNormal:
 # Empirically determine strides, for buffer protocol support.
 # XXX Is there a more elegant way to get these?
 cdef Py_ssize_t _strides[2]
-cdef PointCloud _pc_tmp = PointCloud(np.array([[1, 2, 3],
-                                               [4, 5, 6]], dtype=np.float32))
+cdef PointCloud _pc_tmp = PointCloud(np.array([[1, 2, 3, 0.0, 0.0, 0.0],
+                                               [4, 5, 6, 0.0, 0.0, 0.0]], dtype=np.float32))
 cdef cpp.PointCloud[cpp.PointXYZRGB] *p = _pc_tmp.thisptr()
 _strides[0] = (  <Py_ssize_t><void *>cpp.getptr(p, 1)
                - <Py_ssize_t><void *>cpp.getptr(p, 0))
@@ -283,6 +283,7 @@ cdef class PointCloud:
     def to_array(self):
         """
         Return this object as a 2D numpy array (float32)
+        Columns are x, y, z, r, g, b
         """
         cdef float x,y,z
         cdef cnp.npy_intp n = self.thisptr().size()
@@ -300,6 +301,27 @@ cdef class PointCloud:
             result[i, 3] = p_r
             result[i, 4] = p_g
             result[i, 5] = p_b
+
+        return result
+
+    def to_array_float_rgb(self):
+        """
+        Return this object as a 2D numpy array (float32)
+        Columns are x, y, z  and rgb
+        """
+        cdef float x,y,z
+        cdef cnp.npy_intp n = self.thisptr().size()
+        cdef cnp.ndarray[cnp.float32_t, ndim=2, mode="c"] result
+        cdef cpp.PointXYZRGB *p
+
+        result = np.empty((n, 4), dtype=np.float32)
+
+        for i in range(n):
+            p = cpp.getptr(self.thisptr(), i)
+            result[i, 0] = p.x
+            result[i, 1] = p.y
+            result[i, 2] = p.z
+            result[i, 3] = p.rgb
 
         return result
 
