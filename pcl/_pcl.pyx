@@ -70,7 +70,6 @@ def float_to_rgb(p_rgb):
     # rgb = *reinterpret_cast<int*>(&p.rgb)
     rgb_bytes = struct.pack('f', p_rgb)
     rgb = struct.unpack('I', rgb_bytes)[0]
-
     r = (rgb >> 16) & 0x0000ff
     g = (rgb >> 8)  & 0x0000ff
     b = (rgb)       & 0x0000ff
@@ -321,7 +320,8 @@ cdef class PointCloud:
             result[i, 0] = p.x
             result[i, 1] = p.y
             result[i, 2] = p.z
-            result[i, 3] = p.rgb
+            p_r, p_g,p_b = float_to_rgb(p.rgb)
+            result[i, 3] = rgb_to_float(p_r, p_g, p_b)
 
         return result
 
