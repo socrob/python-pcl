@@ -17,6 +17,16 @@
 Introduction
 ============
 
+Build with the following command:
+
+    python setup.py build
+    
+setup your environment (do not install on the system):
+
+    export PYTHONPATH=$PYTHONPATH:/home/user/path_to_cloned_repo/python-pcl/build/lib.linux-x86_64-2.7
+
+The rest of the documentation is not from SocRob:
+
 This is a small python binding to the `pointcloud <http://pointclouds.org/>`_ library.
 Currently, the following parts of the API are wrapped (all methods operate on PointXYZ)
 point types
