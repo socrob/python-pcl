@@ -17,6 +17,10 @@
 Introduction
 ============
 
+install deps:
+
+    sudo apt-get install cython
+
 Build with the following command:
 
     python setup.py build
